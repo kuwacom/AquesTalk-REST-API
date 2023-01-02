@@ -49,10 +49,14 @@ app.get("/synthesize", async (req, res, next) => {
         fs.unlinkSync(inTEMP);
         if (err) {
             loger.error(`audio query => ${req.query.text}\nsynthesize => ${text} : ${type} : ${speed}\n ${err}`);
+            res.res.writeHead(500);
+            res.send("{\"status\":\"error\"}");
+            res.end();
             return;
         }
         loger.debug(`audio query => ${req.query.text}\nsynthesize => ${text} : ${type} : ${speed}`);
         res.send(fs.readFileSync(outTEMP));
+        res.end();
         fs.unlinkSync(outTEMP);
     });
 });
