@@ -4,9 +4,9 @@ const { exec } = require('child_process');
 const express = require("express");
 const iconv = require('iconv-lite');
 const app = express();
-const kLoger = require("./kloger");
+const kLogger = require("./klogger");
 const { randomInt } = require("crypto");
-const loger = new kLoger({
+const logger = new kLogger({
     info: true,
     debug: true,
     error: true 
@@ -14,11 +14,11 @@ const loger = new kLoger({
 
 // エラーハンドリング
 process.on("uncaughtException", (err) => {
-    loger.error(err);
+    logger.error(err);
 });
 
 const server = app.listen(30596,'0.0.0.0', () => {
-    loger.info("AquesTalk HTTP API bind on "+server.address().address+":"+ + server.address().port);
+    logger.info("AquesTalk HTTP API bind on "+server.address().address+":"+ + server.address().port);
 });
 
 app.get("/synthesize", async (req, res, next) => {
@@ -29,14 +29,14 @@ app.get("/synthesize", async (req, res, next) => {
         res.json({
             status:"error"
         })
-        return
+        return;
     }
-    if(!speed){speed = 1}
+    if(!speed) speed = 1;
 
-    let url = encodeURI(`https://api.kuwa.app/voicevox/audio_query?text=${text.replace("ヴ", "ボ")}&speaker=0`)
+    let url = encodeURI(`https://api.kuwa.app/voicevox-old/audio_query?text=${text.replace("ヴ", "ボ")}&speaker=0`);
     let response = await axios.post(url);
     text = response.data["kana"];
-    console.log("\n"+text+"\n")
+    console.log("\n"+text+"\n");
 
     const inTEMP = "./temp/"+randomInt(100000,999999);
     const outTEMP = "./temp/"+randomInt(100000,999999);
@@ -48,13 +48,13 @@ app.get("/synthesize", async (req, res, next) => {
     exec(AquesTalkCMD, (err, stdout, stderr) => {
         fs.unlinkSync(inTEMP);
         if (err) {
-            loger.error(`audio query => ${req.query.text}\nsynthesize => ${text} : ${type} : ${speed}\n ${err}`);
-            res.res.writeHead(500);
+            logger.error(`audio query => ${req.query.text}\nsynthesize => ${text} : ${type} : ${speed}\n ERROR > ${err}`);
+            res.status(500);
             res.send("{\"status\":\"error\"}");
             res.end();
             return;
         }
-        loger.debug(`audio query => ${req.query.text}\nsynthesize => ${text} : ${type} : ${speed}`);
+        logger.debug(`audio query => ${req.query.text}\nsynthesize => ${text} : ${type} : ${speed}`);
         res.send(fs.readFileSync(outTEMP));
         res.end();
         fs.unlinkSync(outTEMP);
